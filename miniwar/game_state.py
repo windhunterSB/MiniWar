@@ -88,7 +88,7 @@ class City(object):
 class GameState(object):
     def __init__(self, player_num, seed=-1, npc_num=20, max_turn=1000):
         super(GameState, self).__init__()
-        self.seed = -1
+        self.seed = seed
         self.city_num = npc_num + player_num
         self.max_turn = max_turn
         self.turn_i = 0
@@ -128,8 +128,6 @@ class GameState(object):
         self.troops = sorted(self.troops, key=lambda x: x.arrive_turn)
         self.turn_i += 1
 
-        print("turn:", self.turn_i)
-
         # level update first
         for city in self.cities:
             city.exp_update()
@@ -149,6 +147,17 @@ class GameState(object):
         for city in self.cities:
             city.population_update()
 
+        # update scores
+        total_num = 0
+        for city in self.cities:
+            if city.owner == City.NO_OWNER_CITY:
+                continue
+            total_num += city.population
+        for city in self.cities:
+            if city.owner == City.NO_OWNER_CITY:
+                continue
+            self.player_scores[city.owner] += 1. * city.population / total_num
+        
     def player_action(self, player_i, actions):
         action_loss = 0
         from_cities_set = set()
