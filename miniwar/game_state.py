@@ -7,7 +7,7 @@ class Troop(object):
     def __init__(self,
                  owner, from_city, to_city,
                  size, curr_turn, arrive_turn, traj, lev):
-        super(Troop, self).__init__()
+        super().__init__()
         self.owner = owner
         self.from_city = from_city
         self.to_city = to_city
@@ -29,7 +29,7 @@ class City(object):
     }
 
     def __init__(self, idx, owner, pos2d, init_growth):
-        super(City, self).__init__()
+        super().__init__()
         self.idx = idx
         self.owner = owner
         self.pos2d = pos2d
@@ -86,8 +86,8 @@ class City(object):
 
 
 class GameState(object):
-    def __init__(self, player_num, seed=-1, npc_num=20, max_turn=1000):
-        super(GameState, self).__init__()
+    def __init__(self, player_num, seed, npc_num=20, max_turn=1000):
+        super().__init__()
         self.seed = seed
         self.city_num = npc_num + player_num
         self.max_turn = max_turn
