@@ -6,26 +6,40 @@ import math
 class Troop(object):
     def __init__(self,
                  owner, from_city, to_city,
-                 size, curr_turn, arrive_turn, traj, lev):
+                 size, start_turn, arrive_turn, traj, lev):
         super().__init__()
         self.owner = owner
         self.from_city = from_city
         self.to_city = to_city
         self.size = size
-        self.curr_turn = curr_turn
+        self.start_turn = start_turn
         self.arrive_turn = arrive_turn
         self.traj = traj  # [(sx, sy), (ex, ey)]
         self.level = lev
+
+    def get_curr_pos(self, curr_turn):
+        pos = (self.traj[1] - self.traj[0]) * (curr_turn - self.start_turn) / \
+            (self.arrive_turn - self.start_turn) + self.traj[0]
+        return pos.astype(np.int32)
+
+    def get_np(self, curr_turn):
+        pos = self.get_curr_pos(curr_turn)
+        return np.array([[
+            self.owner,
+            pos[0],
+            pos[1],
+            self.size,
+            self.level]], dtype=np.int32)
 
 
 class City(object):
     NO_OWNER_CITY = -1
     NEXT_LEVEL_EXP = {
-      0: 5000,
-      1: 10000,
-      2: 20000,
-      3: 40000,
-      4: 80000,
+        0: 5000,
+        1: 10000,
+        2: 20000,
+        3: 40000,
+        4: 80000,
     }
 
     def __init__(self, idx, owner, pos2d, init_growth):
@@ -56,7 +70,8 @@ class City(object):
         if troop.owner == self.owner:
             self.population += int(troop.size * 0.5)
         else:
-            self.population -= int(troop.size * (1. + 0.1 * troop.level) / (1. + 0.2 * self.level))
+            self.population -= int(troop.size * (1. +
+                                                 0.1 * troop.level) / (1. + 0.2 * self.level))
             if self.population < 0:
                 # loss
                 self.population = -self.population
@@ -84,6 +99,15 @@ class City(object):
             self.owner, self.idx, to_city.idx,
             size, curr_turn, arrive_turn, traj, self.level)
 
+    def get_np(self):
+        return np.array([[
+            self.owner,
+            self.pos2d[0],
+            self.pos2d[1],
+            self.growth,
+            self.population,
+            self.level]], dtype=np.int32)
+
 
 class GameState(object):
     def __init__(self, player_num, seed, npc_num=20, max_turn=1000):
@@ -96,6 +120,7 @@ class GameState(object):
         self.troops = []
         self.player_num = player_num
         self.player_scores = [0] * player_num
+        self.player_action_losses = [0] * player_num
         self.reset()
 
     def reset(self):
@@ -104,6 +129,7 @@ class GameState(object):
         self.cities = []
         self.troops = []
         self.player_scores = [0] * self.player_num
+        self.player_action_losses = [0] * self.player_num
 
         radius = 60.
 
@@ -116,9 +142,12 @@ class GameState(object):
         for j in range(self.player_num, self.city_num):
             pos = np.array([
                 (random.random() - 0.5) * radius * 2,
-                (random.random() - 0.5) * radius * 2], dtype=np.float)
+                (random.random() - 0.5) * radius * 2], dtype=np.int32)
             self.cities.append(
                 City(j, City.NO_OWNER_CITY, pos, random.randrange(3, 10)))
+
+    def is_game_over(self):
+        return self.turn_i >= self.max_turn
 
     def update(self):
         if self.turn_i >= self.max_turn:
@@ -157,12 +186,12 @@ class GameState(object):
             if city.owner == City.NO_OWNER_CITY:
                 continue
             self.player_scores[city.owner] += 1. * city.population / total_num
-        
+
     def player_action(self, player_i, actions):
         action_loss = 0
         from_cities_set = set()
         for action in actions:
-            from_city, to_city = action
+            from_city, (to_city, _dis) = action
             if from_city in from_cities_set:
                 action_loss -= 10
                 continue
@@ -180,7 +209,18 @@ class GameState(object):
             self.troops.append(troop)
             from_cities_set.add(from_city)
 
+        self.player_scores[player_i] += action_loss
+        self.player_action_losses[player_i] += action_loss
         return action_loss
 
     def get_numpy_state(self):
-        pass
+        city_np = []
+        for city in self.cities:
+            city_np.append(city.get_np())
+        troop_np = []
+        for troop in self.troops:
+            troop_np.append(troop.get_np(self.turn_i))
+        return {
+            "city": np.concatenate(city_np, axis=0),
+            "troop": np.concatenate(troop_np, axis=0) if troop_np else [],
+        }

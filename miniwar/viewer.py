@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import QUIT
 import sys
 import numpy as np
+from . import game_state
 
 
 _viewer = None
@@ -66,8 +67,7 @@ class Viewer(object):
         turn_i = state.turn_i
         for troop in state.troops:
             color = self.player_color[troop.owner]
-            pos = (troop.traj[1] - troop.traj[0]) * (turn_i - troop.curr_turn) / \
-                (troop.arrive_turn - troop.curr_turn) + troop.traj[0]
+            pos = troop.get_curr_pos(turn_i)
             pos = pos * self.scale + self.center
             pygame.draw.circle(self.screen, color, pos, 3)
 
@@ -107,7 +107,7 @@ class Viewer(object):
             self.screen.blit(text, text_pos)
 
             length = 120. * num / max_population
-            rect = pygame.Rect(text_pos[0] + 40, text_pos[1], length + 1, 10)
+            rect = pygame.Rect(text_pos[0] + 65, text_pos[1], length + 1, 10)
             pygame.draw.rect(self.screen, color, rect)
         
         scores = []
@@ -140,11 +140,10 @@ def get_viewer():
 
 
 if __name__ == "__main__":
-    import game_state
     viwer = get_viewer()
     viwer.update_timer(10)
 
-    state = game_state.GameState(3, seed=666, npc_num=40, max_turn=2000)
+    state = game_state.GameState(3, seed=666, npc_num=40, max_turn=1000)
 
     for i in range(state.max_turn):
         for event in pygame.event.get():
