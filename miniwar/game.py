@@ -60,11 +60,8 @@ class TroopStateNp(object):
 
 
 class Game(object):
-    def __init__(self, player_names, open_viewer=True):
+    def __init__(self, player_names):
         super().__init__()
-        self.viewer = get_viewer() if open_viewer else None
-        if self.viewer:
-            self.viewer.update_timer(10)
         self.state = None
         self.player_num = len(player_names)
         self.player_names = player_names
@@ -74,17 +71,12 @@ class Game(object):
         self.state_records = {}
         self.score_records = {}
 
-    def _draw_and_tick(self):
-        if self.viewer:
-            self.viewer.draw_and_tick(self.state, self.player_names)
-
     def reset(self, seed, npc_num=20):
         if seed == -1:
             seed = int(time.time())
         self.state_records = {}
         self.score_records = {}
         self.state = GameState(self.player_num, seed, npc_num, max_turn=1000)
-        self._draw_and_tick()
 
     def get_player_id(self, name):
         return self.player_id[name]

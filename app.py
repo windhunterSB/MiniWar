@@ -1,3 +1,4 @@
+import sys
 import pygame
 from pygame.locals import QUIT
 
@@ -39,17 +40,17 @@ def play_game(game, player_names, player_ais, seed, show=True):
 
 def run_app():
     player_names = [
-        "yanzu", 
-        "gouge", 
+        "yanzu",
+        "gouge",
         "xqiang"]
     player_ais = [
-        EasyComputer(0, 990), 
-        EasyComputer(1, 999), 
+        EasyComputer(0, 990),
+        EasyComputer(1, 999),
         EasyComputer(2, 980)]
     game = Game(player_names)
 
     for seed in range(1000, 2000):
-        play_game(game, player_names, player_ais, seed)
+        play_game(game, player_names, player_ais, seed, show=True)
 
 
 if __name__ == "__main__":
